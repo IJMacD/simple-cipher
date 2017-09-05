@@ -1,8 +1,16 @@
 typedef struct {
-  char links[26];
-  unsigned char rotor_1;
-  unsigned char rotor_2;
-  unsigned char rotor_3;
+  char wiring[26];
+  char ring_setting;
+  char position;
+  char notch;
+} rotor;
+
+typedef struct {
+  char plugboard[26];
+  rotor *rotor_1;
+  rotor *rotor_2;
+  rotor *rotor_3;
+  char reflector[26];
 } cipher_conf;
 
 char *encode(const char *, cipher_conf *);

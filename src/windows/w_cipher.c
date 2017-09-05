@@ -97,7 +97,7 @@ void print_links(void *hConsole, const char *links) {
   WriteConsoleOutputCharacterA(hConsole, links, 26, pos, &dwBytesWritten);
 }
 
-void print_rotor(void *hConsole, COORD pos, char rotor) {
+void print_rotor(void *hConsole, COORD pos, rotor r) {
   DWORD dwBytesWritten = 0;
   wchar_t buffer[16 + 1 + 2] = { 0 };
   int i, offset = 0;
@@ -105,11 +105,11 @@ void print_rotor(void *hConsole, COORD pos, char rotor) {
     if (i == -1 || i == 1) {
       buffer[offset++] = 0x2551;  // Vertical double box
     } else if(i < 0) {
-      buffer[offset++] = ((rotor + i + 1 + 26) % 26) + 'A';
+      buffer[offset++] = r.wiring[(r.position + r.ring_setting + i + 1 + 26) % 26];
     } else if(i > 0) {
-      buffer[offset++] = ((rotor + i - 1 + 26) % 26) + 'A';
+      buffer[offset++] = r.wiring[(r.position + r.ring_setting + i - 1 + 26) % 26];
     } else {
-      buffer[offset++] = rotor + 'A';
+      buffer[offset++] = r.wiring[(r.position + r.ring_setting) % 26];
     }
   }
   WriteConsoleOutputCharacterW(hConsole, buffer, LENGTH(buffer) - 1, pos, &dwBytesWritten);
@@ -119,13 +119,13 @@ void print_rotors(void *hConsole, const cipher_conf cipher) {
   COORD pos;
   pos.X = ROTORS_X;
   pos.Y = ROTORS_Y;
-  print_rotor(hConsole, pos, cipher.rotor_1);
+  print_rotor(hConsole, pos, *cipher.rotor_1);
   pos.X = ROTORS_X;
   pos.Y = ROTORS_Y + 1;
-  print_rotor(hConsole, pos, cipher.rotor_2);
+  print_rotor(hConsole, pos, *cipher.rotor_2);
   pos.X = ROTORS_X;
   pos.Y = ROTORS_Y + 2;
-  print_rotor(hConsole, pos, cipher.rotor_3);
+  print_rotor(hConsole, pos, *cipher.rotor_3);
 }
 
 void process(void *hConsole, const char *buffer, int length, cipher_conf cipher) {
@@ -151,7 +151,7 @@ void repl (cipher_conf cipher) {
 
   print_instructions(hConsole);
 
-  print_links(hConsole, cipher.links);
+  print_links(hConsole, cipher.plugboard);
   print_rotors(hConsole, cipher);
 
   char buffer[REPL_MAX_LENGTH] = { 0 };
