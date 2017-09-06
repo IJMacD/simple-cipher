@@ -85,13 +85,21 @@ void print_output(void *hConsole, const char *msg, int length) {
   WriteConsoleOutputCharacterA(hConsole, msg, length, pos, &dwBytesWritten);
 }
 
-void print_links(void *hConsole, const char *links) {
+void print_links(void *hConsole, const char *links, char in_c, char out_c) {
   COORD pos;
   DWORD dwBytesWritten = 0;
   const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   pos.X = LINKS_X;
   pos.Y = LINKS_Y;
   WriteConsoleOutputCharacterA(hConsole, alphabet, 26, pos, &dwBytesWritten);
+  int i;
+  wchar_t buffer[26];
+  for (i = 0; i < 26; i++) {
+    buffer[i] = (alphabet[i] == in_c) ? 0x2193 : ((alphabet[i] == out_c) ? 0x2191 : ' '); // 0x2191 = ↑, 0x2193 = ↓
+  }
+  pos.X = LINKS_X;
+  pos.Y = LINKS_Y + 1;
+  WriteConsoleOutputCharacterW(hConsole, buffer, 26, pos, &dwBytesWritten);
   pos.X = LINKS_X;
   pos.Y = LINKS_Y + 2;
   WriteConsoleOutputCharacterA(hConsole, links, 26, pos, &dwBytesWritten);
@@ -119,22 +127,24 @@ void print_rotors(void *hConsole, const cipher_conf cipher) {
   COORD pos;
   pos.X = ROTORS_X;
   pos.Y = ROTORS_Y;
-  print_rotor(hConsole, pos, *cipher.rotor_1);
+  print_rotor(hConsole, pos, cipher.rotor_1);
   pos.X = ROTORS_X;
   pos.Y = ROTORS_Y + 1;
-  print_rotor(hConsole, pos, *cipher.rotor_2);
+  print_rotor(hConsole, pos, cipher.rotor_2);
   pos.X = ROTORS_X;
   pos.Y = ROTORS_Y + 2;
-  print_rotor(hConsole, pos, *cipher.rotor_3);
+  print_rotor(hConsole, pos, cipher.rotor_3);
 }
 
-void process(void *hConsole, const char *buffer, int length, cipher_conf cipher) {
+void process(void *hConsole, const char *msg, int length, cipher_conf cipher) {
 
-  print_message(hConsole, buffer, length);
+  print_message(hConsole, msg, length);
 
-  char *enc = encode(buffer, &cipher);
+  char *enc = encode(msg, &cipher);
 
   print_output(hConsole, enc, strlen(enc));
+
+  print_links(hConsole, cipher.plugboard, toupper(msg[length - 1]), enc[length - 1]);
 
   print_rotors(hConsole, cipher);
 }
@@ -151,16 +161,18 @@ void repl (cipher_conf cipher) {
 
   print_instructions(hConsole);
 
-  print_links(hConsole, cipher.plugboard);
+  print_links(hConsole, cipher.plugboard, 0, 0);
   print_rotors(hConsole, cipher);
 
   char buffer[REPL_MAX_LENGTH] = { 0 };
-  unsigned int offset = 0;
+  int offset = 0;
 
   char c;
   while((c = _getch()) != 27){  // ESC key
     if (c == 0x08) { // Backspace
-      offset = --offset % REPL_MAX_LENGTH;
+      if(--offset < 0) {
+        offset = 0;
+      }
       buffer[offset] = '\0';
 
       clear_message(hConsole);
