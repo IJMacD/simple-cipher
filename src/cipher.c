@@ -57,8 +57,12 @@ cipher_conf enigma = {
   .reflector = "YRUHQSLDPXNGOKMIEBFZCWVJAT",
 };
 
+char valid_index(char i) {
+  return (i + 26) % 26;
+}
+
 char valid_letter(char c) {
-  return 'A' + (c - 'A' + 26 + 26) % 26;
+  return 'A' + valid_index(c - 'A');
 }
 
 char swap_letter(const char c, const char *map) {
@@ -132,7 +136,7 @@ char *encode (const char *msg, cipher_conf *cipher) {
       c = apply_rotor_r(c, cipher->rotor_2);
       c = apply_rotor_r(c, cipher->rotor_3);
 
-      c = swap_letter(c, cipher->plugboard);
+      c = unswap_letter(c, cipher->plugboard);
       out[i] = c;
 
     } else {
@@ -164,11 +168,75 @@ void create_cipher(cipher_conf *dest, const cipher_conf src, const rotor r1, con
   dest->rotor_3.position = r3.position;
 }
 
+void shuffle_alphabet(char buffer[26]) {
+  int i = 26;
+  while (i--) {
+    char r = rand() % 26;
+    char tmp = buffer[r];
+    buffer[r] = buffer[i];
+    buffer[i] = tmp;
+  }
+}
+
+char find_letter(char buffer[26], char c) {
+  int i = 26;
+  while(i-- && buffer[i] != c);
+  return i;
+}
+
+char find_nth_space(char buffer[26], char n) {
+  int i = 0, c = 0;
+  while(c < n) {
+    if (buffer[i++] == ' ') c++;
+  }
+  while(buffer[i] != ' ') i++;
+  return i;
+}
+
+void random_plugboard(char buffer[26]) {
+  int i = 26;
+  while (i--) {
+    buffer[i] = ' ';
+  }
+  i = 26;
+  int used = 0;
+  while (i--) {
+    if(buffer[i] == ' ') {
+      int spaces = 25 - used;
+      int r = rand() % spaces;
+      int n = find_nth_space(buffer, r);
+      buffer[i] = n + 'A';
+      buffer[n] = i + 'A';
+      used += 2;
+    }
+  }
+}
+
+int validate_plugboard(char buffer[26]) {
+  int i = 26;
+  while (i--) {
+    char c = buffer[i];
+    char n = i + 'A';
+    char j = c - 'A';
+    char d = buffer[j];
+    if(d != n) return 0;
+  }
+  return 1;
+}
+
 int main(int argc, char *argv[]) {
 
   cipher_conf my_cipher;
 
   create_cipher(&my_cipher, enigma, rotor_I, rotor_II, rotor_III);
+
+  random_plugboard(my_cipher.plugboard);
+  printf("%s\n", my_cipher.plugboard);
+
+  if(!validate_plugboard(my_cipher.plugboard)) {
+    fprintf(stderr, "Error: Invalid plugboard. Letters must be paired up.\n");
+    exit(-1);
+  }
 
   if (argc > 1 && !strcmp(argv[1], "-r")) {
     repl(my_cipher);
