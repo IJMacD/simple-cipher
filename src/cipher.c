@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 #include "cipher.h"
 
@@ -230,8 +232,8 @@ int main(int argc, char *argv[]) {
 
   create_cipher(&my_cipher, enigma, rotor_I, rotor_II, rotor_III);
 
-  random_plugboard(my_cipher.plugboard);
-  printf("%s\n", my_cipher.plugboard);
+  // random_plugboard(my_cipher.plugboard);
+  // printf("%s\n", my_cipher.plugboard);
 
   if(!validate_plugboard(my_cipher.plugboard)) {
     fprintf(stderr, "Error: Invalid plugboard. Letters must be paired up.\n");
